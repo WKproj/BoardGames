@@ -235,7 +235,7 @@ def wyswietl_liste_graczy():
             statystyki_gracza = pobierz_statystyki_gracza_dla_gracza(gracz)
             liczba_gier = statystyki_gracza[1] if statystyki_gracza else 0
             liczba_wygranych = statystyki_gracza[2] if statystyki_gracza else 0
-            print(f"{gracz} - Liczba gier: {liczba_gier}, Liczba wygranych: {liczba_wygranych}")
+            print(f"{gracz} - gier: {liczba_gier}, wygranych: {liczba_wygranych}")
         print("=" * 50 + "\n")
     else:
         print("Brak dostępnych graczy.\n")
@@ -255,7 +255,7 @@ def pobierz_statystyki_gracza_dla_gracza(nazwa_gracza):
 
 
 
-# Obsługa konsoli
+# widok konsoli
 while True:
     print("\n========= Menu =========")
 
@@ -377,5 +377,4 @@ while True:
     else:
         print("Niepoprawny wybór. Spróbuj ponownie.")
 
-# Zamknięcie połączenia z bazą danych
 conn.close()
