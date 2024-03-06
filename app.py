@@ -267,7 +267,7 @@ while True:
     print("3. Dodaj rozgrywkę z wynikami")
 
     print("\n====== Losowanie ======")
-    print("4. Losowanie gry")
+    print("4. Losuj grę")
 
     print("\n===== Usuwanie =====")
     print("5. Usuń grę")
