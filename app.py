@@ -159,9 +159,16 @@ def usun_gre(nazwa_gry):
     except sqlite3.Error as e:
         print("Błąd:", e)
 
+def usun_gracza(nazwa_gracza):
+    try:
+        c.execute("DELETE FROM gracze WHERE nazwa=?", (nazwa_gracza,))
+        conn.commit()
+        print(f"Usunięto gracza: {nazwa_gracza}")
+    except sqlite3.Error as e:
+        print("Błąd:", e)
+
 def usun_rozgrywke(nazwa_gry, numer_rozgrywki):
     try:
-        # Sprawdzenie, czy gra o podanej nazwie istnieje
         c.execute("SELECT id FROM gry WHERE nazwa=?", (nazwa_gry,))
         gra_id = c.fetchone()
 
@@ -272,11 +279,12 @@ while True:
     print("\n===== Usuwanie =====")
     print("5. Usuń grę")
     print("6. Usuń rozgrywkę")
+    print("7. Usuń gracza")
 
     print("\n====== Statystyki ======")
-    print("7. Wyświetl statystyki dla gry")
-    print("8. Wyświetl statystyki gier")
-    print("9. Wyświetl statystyki graczy")
+    print("8. Wyświetl statystyki dla gry")
+    print("9. Wyświetl statystyki gier")
+    print("10. Wyświetl statystyki graczy")
     
     print("\n===== Wyjście =====")
     print("0. Zamknij")
@@ -359,6 +367,16 @@ while True:
             print("Brak dostępnych gier do usunięcia.")
 
     elif wybor == '7':
+        gracze = pobierz_liste_graczy()
+        if gracze:
+            print("gracz:", gracze)
+            nazwa_gracza = input("Podaj nazwę gracza do usunięcia: ")
+            usun_gracza(nazwa_gracza)
+        else:
+            print("Brak dostępnych graczy do usunięcia.")
+    
+
+    elif wybor == '8':
         gry = pobierz_liste_gier()
         if gry:
             print("Dostępne gry:", gry)
@@ -367,10 +385,10 @@ while True:
         else:
             print("Brak dostępnych gier do wyświetlenia statystyk.")
 
-    elif wybor == '8':
+    elif wybor == '9':
         wyswietl_liste_gier_z_liczba_rozgrywek()
 
-    elif wybor == '9':
+    elif wybor == '10':
         wyswietl_liste_graczy()
 
     elif wybor == '0':
