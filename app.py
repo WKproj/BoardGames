@@ -236,7 +236,7 @@ def wyswietl_statystyki(nazwa_gry):
             else:
                 print("Brak statystyk graczy.\n")
         else:
-            print(f"Nie znaleziono gry o nazwie: {nazwa_gry}")
+            print(f"Nie znaleziono żadnej rozgrywki dla: {nazwa_gry}")
     except sqlite3.Error as e:
         print("Błąd:", e)
 
