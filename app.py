@@ -19,6 +19,7 @@ c.execute('''CREATE TABLE IF NOT EXISTS gracze
 c.execute('''CREATE TABLE IF NOT EXISTS rozgrywki
              (id INTEGER PRIMARY KEY,
               gra_id INTEGER,
+              numer INTEGER,
               FOREIGN KEY(gra_id) REFERENCES gry(id))''')
 
 c.execute('''CREATE TABLE IF NOT EXISTS wyniki
@@ -69,7 +70,7 @@ def pobierz_liste_graczy():
 
 def pobierz_statystyki_gry(nazwa_gry):
     try:
-        c.execute("SELECT g.nazwa, COUNT(DISTINCT r.id) as liczba_gier, AVG(w.punkty) as srednia_punktow "
+        c.execute("SELECT g.nazwa, COUNT(DISTINCT r.numer) as liczba_gier, AVG(w.punkty) as srednia_punktow "
                   "FROM gry g LEFT JOIN rozgrywki r ON g.id=r.gra_id "
                   "LEFT JOIN wyniki w ON r.id=w.rozgrywka_id "
                   "WHERE g.nazwa=? AND g.id=r.gra_id " 
@@ -96,7 +97,7 @@ def pobierz_statystyki_gracza(nazwa_gry):
 
 def pobierz_historie_gier(nazwa_gry):
     try:
-        c.execute("SELECT r.id, gracz_id, punkty, wygrana "
+        c.execute("SELECT r.id, r.numer, gracz_id, punkty, wygrana "
                   "FROM wyniki w LEFT JOIN rozgrywki r ON w.rozgrywka_id=r.id "
                   "LEFT JOIN gry g ON r.gra_id=g.id "
                   "WHERE g.nazwa=? "
@@ -129,7 +130,16 @@ def dodaj_rozgrywke_z_wynikami(nazwa_gry, gracze):
 
         if gra_id is not None:
             gra_id = gra_id[0]
-            c.execute("INSERT INTO rozgrywki (gra_id) VALUES (?)", (gra_id,))
+
+            # Fetch the maximum numer for the given game
+            c.execute("SELECT MAX(numer) FROM rozgrywki WHERE gra_id=?", (gra_id,))
+            max_numer = c.fetchone()[0]
+
+            # Set numer to one greater than the maximum or 1 if there is no existing rozgrywki
+            numer_rozgrywki = max_numer + 1 if max_numer is not None else 1
+
+            # Insert a new rozgrywka with the calculated numer
+            c.execute("INSERT INTO rozgrywki (gra_id, numer) VALUES (?, ?)", (gra_id, numer_rozgrywki))
             rozgrywka_id = c.lastrowid
 
             for gracz, punkty, wygrana in gracze:
@@ -140,7 +150,7 @@ def dodaj_rozgrywke_z_wynikami(nazwa_gry, gracze):
             conn.commit()
             print(f"Dodano rozgrywkę dla gry: {nazwa_gry} z wynikami: {gracze}")
         else:
-            print(f"Nie znaleziono gry o nazwie: {nazwa_gry}")
+            print(f"Brak gry: {nazwa_gry} lub rozgrywek dla niej")
     except sqlite3.Error as e:
         print("Błąd:", e)
 
@@ -167,16 +177,27 @@ def usun_gracza(nazwa_gracza):
     except sqlite3.Error as e:
         print("Błąd:", e)
 
-def usun_rozgrywke(nazwa_gry, numer_rozgrywki):
+def usun_rozgrywke(nazwa_gry):
     try:
         c.execute("SELECT id FROM gry WHERE nazwa=?", (nazwa_gry,))
         gra_id = c.fetchone()
 
         if gra_id is not None:
             gra_id = gra_id[0]
-            c.execute("DELETE FROM rozgrywki WHERE numer=? AND gra_id=?", (numer_rozgrywki, gra_id))
+
+            c.execute("SELECT MAX(numer) FROM rozgrywki WHERE gra_id=?", (gra_id,))
+            max_numer = c.fetchone()[0]
+
+            c.execute("SELECT id FROM rozgrywki WHERE numer=? AND gra_id=?", (max_numer, gra_id))
+            id_rozgrywki = c.fetchone()[0]
+
+            c.execute("DELETE FROM rozgrywki WHERE numer=? AND gra_id=?", (max_numer, gra_id))
             conn.commit()
-            print(f"Usunięto rozgrywkę o numerze {numer_rozgrywki} dla gry: {nazwa_gry}")
+            
+            c.execute("DELETE FROM wyniki WHERE rozgrywka_id=?", (id_rozgrywki,))
+            conn.commit()
+
+            print(f"Usunięto rozgrywkę o numerze {max_numer} dla gry: {nazwa_gry}")
         else:
             print(f"Nie znaleziono gry o nazwie: {nazwa_gry}")
     except sqlite3.Error as e:
@@ -205,10 +226,10 @@ def wyswietl_statystyki(nazwa_gry):
                 historia_gier = pobierz_historie_gier(nazwa_gry)
                 if historia_gier:
                     print("===== Historia gier =====")
-                    for numer_rozgrywki, gracz_id, punkty, wygrana in historia_gier:
+                    for numer_rozgrywki, numer, gracz_id, punkty, wygrana in historia_gier:
                         c.execute("SELECT nazwa FROM gracze WHERE id=?", (gracz_id,))
                         gracz_nazwa = c.fetchone()[0]
-                        print(f"Nr rozgrywki: {numer_rozgrywki}, Gracz: {gracz_nazwa}, Punkty: {punkty}, Wygrana: {'Tak' if wygrana else 'Nie'}")
+                        print(f"Nr rozgrywki: {numer_rozgrywki}, ID: {numer}, Gracz: {gracz_nazwa}, Punkty: {punkty}, Wygrana: {'Tak' if wygrana else 'Nie'}")
                     print("=" * 30 + "\n")
                 else:
                     print("Brak historii gier.\n")
@@ -278,12 +299,12 @@ while True:
 
     print("\n===== Usuwanie =====")
     print("5. Usuń grę")
-    print("6. Usuń rozgrywkę")
+    print("6. Usuń ostatnią rozgrywkę dla gry")
     print("7. Usuń gracza")
 
     print("\n====== Statystyki ======")
-    print("8. Wyświetl statystyki dla gry")
-    print("9. Wyświetl statystyki gier")
+    print("8. Wyświetl statystyki dla wybranej gry")
+    print("9. Wyświetl liczbę rozgrywek dla gier")
     print("10. Wyświetl statystyki graczy")
     
     print("\n===== Wyjście =====")
@@ -361,8 +382,7 @@ while True:
         if gry:
             print("Dostępne gry:", gry)
             nazwa_gry = input("Podaj nazwę gry: ")
-            numer_rozgrywki = int(input("Podaj numer rozgrywki do usunięcia: "))
-            usun_rozgrywke(nazwa_gry, numer_rozgrywki)
+            usun_rozgrywke(nazwa_gry)
         else:
             print("Brak dostępnych gier do usunięcia.")
 
