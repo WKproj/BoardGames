@@ -229,7 +229,7 @@ def wyswietl_statystyki(nazwa_gry):
                     for numer_rozgrywki, numer, gracz_id, punkty, wygrana in historia_gier:
                         c.execute("SELECT nazwa FROM gracze WHERE id=?", (gracz_id,))
                         gracz_nazwa = c.fetchone()[0]
-                        print(f"Nr rozgrywki: {numer_rozgrywki}, ID: {numer}, Gracz: {gracz_nazwa}, Punkty: {punkty}, Wygrana: {'Tak' if wygrana else 'Nie'}")
+                        print(f"Nr rozgrywki: {numer_rozgrywki}, Gracz: {gracz_nazwa}, Punkty: {punkty}, Wygrana: {'Tak' if wygrana else 'Nie'}")
                     print("=" * 30 + "\n")
                 else:
                     print("Brak historii gier.\n")
